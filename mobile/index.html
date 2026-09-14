@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <title>지금게임</title>
+    <style>
+      html,
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: #eaf0f6;
+      }
+      body {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+      }
+      #root {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        height: auto !important;
+      }
+      /* RN Web 기본 잘림 방지 */
+      #root > div {
+        min-height: 100vh;
+      }
+    </style>
+    <link rel="icon" href="/favicon.ico" />
+  </head>
+  <body>
+    <noscript>이 사이트를 보려면 JavaScript가 필요합니다.</noscript>
+    <div id="root"></div>
+  </body>
+</html>

@@ -141,29 +141,58 @@ app.get('/api/health', (_req, res) => {
 app.get('/api/popular', async (_req, res) => {
   try {
     const payload = await cachedSingleflight('popular', 2 * 60 * 1000, async () => {
-      const charts = await steamGet(
-        'https://api.steampowered.com/ISteamChartsService/GetGamesByConcurrentPlayers/v1/'
-      );
+      const [charts, weekly] = await Promise.all([
+        steamGet(
+          'https://api.steampowered.com/ISteamChartsService/GetGamesByConcurrentPlayers/v1/'
+        ),
+        safeSteamGet(
+          'https://api.steampowered.com/ISteamChartsService/GetMostPlayedGames/v1/'
+        ),
+      ]);
       const ranks = (charts.response?.ranks || []).slice(0, 30);
+      const weeklyMap = new Map(
+        (weekly?.response?.ranks || []).map((r) => [r.appid, r.last_week_rank || null])
+      );
       const infoMap = await getStoreItems(ranks.map((r) => r.appid));
 
       const games = ranks.map((row) => {
         const info = infoMap.get(row.appid) || {};
+        const current = row.concurrent_in_game || 0;
+        const peak = row.peak_in_game || 0;
+        const fillRate = peak ? Math.round((current / peak) * 100) : 0;
+        const lastWeekRank = weeklyMap.get(row.appid);
+        const rankDelta =
+          lastWeekRank && lastWeekRank > 0 ? lastWeekRank - row.rank : null;
+        let badge = '';
+        if (rankDelta !== null && rankDelta >= 5) badge = '급상승';
+        else if (fillRate >= 85 && row.rank <= 20) badge = '지금 핫함';
+        else if (row.rank <= 3) badge = 'TOP';
+
         return {
           rank: row.rank,
           appid: row.appid,
           name: info.name || `게임 ${row.appid}`,
           image: headerImage(row.appid),
-          currentPlayers: row.concurrent_in_game || 0,
-          currentPlayersText: formatPlayers(row.concurrent_in_game),
-          peakToday: row.peak_in_game || 0,
-          peakTodayText: formatPlayers(row.peak_in_game),
+          currentPlayers: current,
+          currentPlayersText: formatPlayers(current),
+          peakToday: peak,
+          peakTodayText: formatPlayers(peak),
+          fillRate,
+          lastWeekRank: lastWeekRank || null,
+          rankDelta,
+          badge,
         };
       });
+
+      const rising = [...games]
+        .filter((g) => g.rankDelta !== null && g.rankDelta > 0)
+        .sort((a, b) => b.rankDelta - a.rankDelta)
+        .slice(0, 6);
 
       return {
         lastUpdate: charts.response?.last_update || Math.floor(Date.now() / 1000),
         games,
+        rising,
       };
     });
     res.json(payload);

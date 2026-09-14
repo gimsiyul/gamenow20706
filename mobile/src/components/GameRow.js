@@ -23,10 +23,15 @@ export default function GameRow({ game, onPress, showRank = false }) {
         </Text>
         <Text style={styles.meta} numberOfLines={1}>
           {game.currentPlayersText
-            ? `현재 ${game.currentPlayersText}명 플레이 중`
+            ? `현재 ${game.currentPlayersText}명 · 최고 ${game.peakTodayText || '-'}`
             : game.priceText || '정보 보기'}
         </Text>
       </View>
+      {game.badge ? (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{game.badge}</Text>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -39,6 +44,8 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     padding: 10,
     marginBottom: 10,
+    borderWidth: 1,
+    borderColor: colors.line,
   },
   pressed: {
     opacity: 0.8,
@@ -68,5 +75,17 @@ const styles = StyleSheet.create({
     color: colors.muted,
     marginTop: 4,
     fontSize: 12,
+  },
+  badge: {
+    backgroundColor: colors.accent,
+    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginLeft: 8,
+  },
+  badgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,9 +12,12 @@ import {
 import { fetchGame } from '../api';
 import BarChart from '../components/BarChart';
 import InfoTable from '../components/InfoTable';
+import Page from '../components/Page';
 import { colors } from '../theme';
 
-export default function DetailScreen({ route }) {
+const isWeb = Platform.OS === 'web';
+
+export default function DetailScreen({ route, navigation, showWebBack = false }) {
   const { appid } = route.params;
   const [game, setGame] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -49,6 +54,11 @@ export default function DetailScreen({ route }) {
   if (error || !game) {
     return (
       <View style={styles.center}>
+        {showWebBack ? (
+          <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <Text style={styles.backText}>← 목록으로</Text>
+          </Pressable>
+        ) : null}
         <Text style={styles.error}>{error || '정보가 없습니다.'}</Text>
       </View>
     );
@@ -62,9 +72,19 @@ export default function DetailScreen({ route }) {
     .filter(Boolean)
     .join(', ');
 
-  return (
-    <ScrollView style={styles.wrap} contentContainerStyle={styles.content}>
-      <Image source={{ uri: game.image }} style={styles.cover} />
+  const body = (
+    <>
+      {showWebBack ? (
+        <Pressable onPress={() => navigation.goBack()} style={styles.backBtn}>
+          <Text style={styles.backText}>← 목록으로</Text>
+        </Pressable>
+      ) : null}
+
+      <Image
+        source={{ uri: game.image }}
+        style={styles.cover}
+        resizeMode="contain"
+      />
       <Text style={styles.name}>{game.name}</Text>
       <Text style={styles.genres}>{(game.genres || []).join(' · ') || '장르 정보 없음'}</Text>
 
@@ -125,7 +145,10 @@ export default function DetailScreen({ route }) {
               : '',
           },
           { label: '메타크리틱', value: game.metacritic ? `${game.metacritic}점` : '' },
-          { label: '추천 수', value: game.recommendations ? game.recommendations.toLocaleString('ko-KR') : '' },
+          {
+            label: '추천 수',
+            value: game.recommendations ? game.recommendations.toLocaleString('ko-KR') : '',
+          },
           { label: 'DLC', value: game.dlcCount ? `${game.dlcCount}개` : '' },
           { label: '보유 추정', value: game.owners },
           { label: '도전과제', value: game.achievements?.total ? `${game.achievements.total}개` : '' },
@@ -183,16 +206,28 @@ export default function DetailScreen({ route }) {
       {game.screenshots?.length ? (
         <>
           <Text style={styles.section}>스크린샷</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <View style={styles.shotGrid}>
             {game.screenshots.map((uri) => (
-              <Image key={uri} source={{ uri }} style={styles.shot} />
+              <View key={uri} style={styles.shotWrap}>
+                <Image source={{ uri }} style={styles.shot} resizeMode="contain" />
+              </View>
             ))}
-          </ScrollView>
+          </View>
         </>
       ) : null}
 
       <Text style={styles.section}>소개</Text>
       <Text style={styles.desc}>{game.about || game.description || '설명이 없습니다.'}</Text>
+    </>
+  );
+
+  if (isWeb) {
+    return <Page>{body}</Page>;
+  }
+
+  return (
+    <ScrollView style={styles.wrap} contentContainerStyle={styles.content}>
+      {body}
     </ScrollView>
   );
 }
@@ -217,33 +252,49 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 48,
   },
+  backBtn: {
+    alignSelf: 'flex-start',
+    marginBottom: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  backText: {
+    color: colors.accent,
+    fontSize: 16,
+    fontWeight: '700',
+  },
   cover: {
     width: '100%',
-    height: 180,
+    aspectRatio: 460 / 215,
     borderRadius: 16,
     backgroundColor: colors.card,
+    overflow: 'hidden',
   },
   name: {
     color: colors.text,
-    fontSize: 24,
+    fontSize: isWeb ? 30 : 24,
     fontWeight: '800',
     marginTop: 16,
   },
   genres: {
     color: colors.accent,
     marginTop: 6,
-    fontSize: 13,
+    fontSize: 14,
   },
   statsRow: {
     flexDirection: 'row',
     gap: 8,
     marginTop: 16,
+    flexWrap: isWeb ? 'wrap' : 'nowrap',
   },
   mini: {
     flex: 1,
+    minWidth: isWeb ? 160 : undefined,
     backgroundColor: colors.card,
     borderRadius: 12,
     padding: 12,
+    borderWidth: 1,
+    borderColor: colors.line,
   },
   statLabel: {
     color: colors.muted,
@@ -261,6 +312,8 @@ const styles = StyleSheet.create({
     padding: 14,
     marginTop: 10,
     gap: 12,
+    borderWidth: 1,
+    borderColor: colors.line,
   },
   section: {
     color: colors.text,
@@ -302,6 +355,8 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: colors.line,
   },
   chipText: {
     color: colors.text,
@@ -315,6 +370,8 @@ const styles = StyleSheet.create({
     padding: 8,
     marginBottom: 8,
     gap: 10,
+    borderWidth: 1,
+    borderColor: colors.line,
   },
   achIcon: {
     width: 36,
@@ -328,12 +385,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
+  shotGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    width: '100%',
+    marginBottom: 8,
+    rowGap: 12,
+  },
+  shotWrap: {
+    width: isWeb ? '49%' : '100%',
+    marginBottom: isWeb ? 0 : 12,
+  },
   shot: {
-    width: 220,
-    height: 124,
+    width: '100%',
+    aspectRatio: 16 / 9,
     borderRadius: 10,
-    marginRight: 10,
     backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.line,
   },
   desc: {
     color: colors.muted,
@@ -350,6 +420,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 24,
+    minHeight: 240,
   },
   error: {
     color: colors.danger,

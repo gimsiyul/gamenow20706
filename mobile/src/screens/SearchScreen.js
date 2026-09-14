@@ -2,14 +2,19 @@ import { useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { fetchSearch } from '../api';
 import GameRow from '../components/GameRow';
+import Page from '../components/Page';
 import { colors } from '../theme';
+
+const isWeb = Platform.OS === 'web';
 
 export default function SearchScreen({ navigation }) {
   const [query, setQuery] = useState('');
@@ -34,8 +39,8 @@ export default function SearchScreen({ navigation }) {
     }
   }
 
-  return (
-    <SafeAreaView style={styles.wrap}>
+  const body = (
+    <>
       <Text style={styles.title}>게임 검색</Text>
       <TextInput
         value={query}
@@ -51,6 +56,7 @@ export default function SearchScreen({ navigation }) {
       <FlatList
         data={games}
         keyExtractor={(item) => String(item.appid)}
+        style={isWeb ? { flexGrow: 0 } : undefined}
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
           <GameRow
@@ -66,8 +72,14 @@ export default function SearchScreen({ navigation }) {
           ) : null
         }
       />
-    </SafeAreaView>
+    </>
   );
+
+  if (isWeb) {
+    return <Page>{body}</Page>;
+  }
+
+  return <SafeAreaView style={styles.wrap}>{body}</SafeAreaView>;
 }
 
 const styles = StyleSheet.create({
@@ -79,7 +91,7 @@ const styles = StyleSheet.create({
   },
   title: {
     color: colors.text,
-    fontSize: 22,
+    fontSize: isWeb ? 28 : 22,
     fontWeight: '800',
     marginBottom: 12,
   },
@@ -92,6 +104,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: colors.line,
+    maxWidth: isWeb ? 480 : undefined,
   },
   list: {
     paddingTop: 16,

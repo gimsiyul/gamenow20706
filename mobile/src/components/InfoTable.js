@@ -22,6 +22,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.card,
     borderRadius: 12,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.line,
   },
   tr: {
     flexDirection: 'row',
