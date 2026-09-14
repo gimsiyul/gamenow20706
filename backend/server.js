@@ -86,7 +86,13 @@ async function steamGet(url) {
 }
 
 function headerImage(appid) {
-  return `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/header.jpg`;
+  return `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appid}/header.jpg`;
+}
+
+function buildAssetUrl(assets, key) {
+  if (!assets?.asset_url_format || !assets[key]) return '';
+  const path = assets.asset_url_format.replace('${FILENAME}', assets[key]);
+  return `https://shared.akamai.steamstatic.com/store_item_assets/${path}`;
 }
 
 function formatPlayers(n) {
@@ -125,10 +131,16 @@ async function getStoreItems(appids) {
   const data = await steamGet(url);
   const map = new Map();
   for (const item of data.response?.store_items || []) {
-    map.set(item.appid || item.id, {
-      name: item.name || `App ${item.appid || item.id}`,
+    const appid = item.appid || item.id;
+    const image =
+      buildAssetUrl(item.assets, 'header') ||
+      buildAssetUrl(item.assets, 'main_capsule') ||
+      headerImage(appid);
+    map.set(appid, {
+      name: item.name || `App ${appid}`,
       isFree: Boolean(item.is_free),
       description: item.basic_info?.short_description || '',
+      image,
     });
   }
   return map;
@@ -172,7 +184,7 @@ app.get('/api/popular', async (_req, res) => {
           rank: row.rank,
           appid: row.appid,
           name: info.name || `게임 ${row.appid}`,
-          image: headerImage(row.appid),
+          image: info.image || headerImage(row.appid),
           currentPlayers: current,
           currentPlayersText: formatPlayers(current),
           peakToday: peak,
