@@ -33,7 +33,12 @@ function getApiBase() {
 const API_BASE = getApiBase();
 
 async function getJson(path) {
-  const res = await fetch(`${API_BASE}${path}`);
+  let res;
+  try {
+    res = await fetch(`${API_BASE}${path}`);
+  } catch {
+    throw new Error('서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.');
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new Error(data.error || '서버 요청에 실패했습니다.');

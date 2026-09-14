@@ -8,7 +8,7 @@ const UA = 'Mozilla/5.0 GameStatsApp/1.0';
 app.use(cors());
 app.use(express.json());
 
-const STEAM_TIMEOUT_MS = 8000;
+const STEAM_TIMEOUT_MS = 15000;
 const CACHE_MAX = 500;
 const CACHE_CLEAN_MS = 60 * 1000;
 
@@ -344,10 +344,10 @@ app.get('/api/game/:id', async (req, res) => {
         steamGet(
           `https://store.steampowered.com/api/appdetails?appids=${appid}&cc=KR&l=koreana`
         ),
-        steamGet(
-          `https://store.steampowered.com/appreviews/${appid}?json=1&language=all&purchase_type=all&num_per_page=100&filter=all`
+        safeSteamGet(
+          `https://store.steampowered.com/appreviews/${appid}?json=1&language=all&purchase_type=all&num_per_page=30&filter=all`
         ),
-        steamGet(
+        safeSteamGet(
           `https://api.steampowered.com/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=${appid}`
         ),
         safeSteamGet(`https://steamspy.com/api.php?request=appdetails&appid=${appid}`),
@@ -364,12 +364,12 @@ app.get('/api/game/:id', async (req, res) => {
       }
 
       const data = wrapped.data;
-      const summary = reviewJson.query_summary || {};
+      const summary = reviewJson?.query_summary || {};
       const total = summary.total_reviews || 0;
       const positive = summary.total_positive || 0;
       const negative = summary.total_negative || 0;
       const percent = total ? Math.round((positive / total) * 100) : 0;
-      const currentPlayers = playersJson.response?.player_count || 0;
+      const currentPlayers = playersJson?.response?.player_count || 0;
       const price = formatDetailPrice(data);
       const peak = await getPeakToday(appid);
       const languages = parseLanguages(data.supported_languages);
@@ -409,7 +409,7 @@ app.get('/api/game/:id', async (req, res) => {
         peakTodayText: peak.peakTodayText,
         owners: formatOwners(spyJson?.owners),
         tags,
-        playtime: computePlaytime(reviewJson.reviews || []),
+        playtime: computePlaytime(reviewJson?.reviews || []),
         review: {
           score: summary.review_score || 0,
           description: REVIEW_KO[summary.review_score] || summary.review_score_desc || '평가 없음',
