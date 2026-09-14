@@ -1,0 +1,12 @@
+node_modules/
+**/node_modules/
+.expo/
+dist/
+web-build/
+.firebase/
+firebase-debug.log
+firebase-debug.*.log
+ui-debug.log
+.env
+.env*.local
+.DS_Store
